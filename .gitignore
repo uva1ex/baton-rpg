@@ -1,0 +1,8 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# local test profiles and logs
+.chrome-*/
+*.log

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>БАТОН СУДЬБЫ — мемная RPG на 30–45 минут</title>
+  <meta name="description" content="Тёмный Менеджер украл священный батон. Королевство на грани бесконечного понедельника. Мемная RPG на 30–45 минут: бои, шаурма и лёгкий кринж.">
+  <meta name="theme-color" content="#0a0714">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="БАТОН СУДЬБЫ — мемная RPG на 30–45 минут">
+  <meta property="og:description" content="Тёмный Менеджер украл священный батон. Королевство на грани бесконечного понедельника. Спаси батон за 30–45 минут.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A5%96%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="ambient" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+
+  <svg width="0" height="0" class="svg-sprite" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="b-crust" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffe7b0"/>
+        <stop offset="0.28" stop-color="#f4c46f"/>
+        <stop offset="0.62" stop-color="#d1903c"/>
+        <stop offset="1" stop-color="#9a5f20"/>
+      </linearGradient>
+      <linearGradient id="b-score" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff6d8"/>
+        <stop offset="1" stop-color="#efc27a"/>
+      </linearGradient>
+      <radialGradient id="b-glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#f3c777" stop-opacity="0.5"/>
+        <stop offset="1" stop-color="#f3c777" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="b-blur" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="7"/>
+      </filter>
+    </defs>
+    <symbol id="baguette" viewBox="0 0 220 160">
+      <ellipse cx="110" cy="112" rx="88" ry="20" fill="url(#b-glow)" filter="url(#b-blur)"/>
+      <g transform="rotate(-20 110 80)">
+        <path d="M28 86 C30 66 58 51 104 48 C150 45 184 52 193 66 C200 78 186 91 151 98 C110 106 66 109 43 100 C33 96 27 92 28 86 Z"
+              fill="url(#b-crust)" stroke="#7d4a15" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M38 78 C52 62 82 55 118 53 C150 51 174 56 186 66" fill="none"
+              stroke="#fff3cf" stroke-opacity=".5" stroke-width="3.5" stroke-linecap="round"/>
+        <g fill="url(#b-score)" stroke="#a86a25" stroke-width="1" stroke-opacity=".3">
+          <ellipse cx="66" cy="72" rx="5.5" ry="14" transform="rotate(52 66 72)"/>
+          <ellipse cx="100" cy="66" rx="5.5" ry="14" transform="rotate(52 100 66)"/>
+          <ellipse cx="134" cy="63" rx="5.5" ry="14" transform="rotate(52 134 63)"/>
+          <ellipse cx="166" cy="66" rx="5.5" ry="14" transform="rotate(52 166 66)"/>
+        </g>
+        <g fill="#7d4a15" opacity=".2">
+          <circle cx="55" cy="92" r="2.2"/><circle cx="86" cy="97" r="1.8"/>
+          <circle cx="120" cy="94" r="2.4"/><circle cx="152" cy="88" r="1.6"/>
+          <circle cx="175" cy="79" r="2"/>
+        </g>
+        <path d="M36 96 C60 105 104 104 146 96" fill="none" stroke="#6b3d10"
+              stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>
+      </g>
+    </symbol>
+  </svg>
+
+  <div id="app">
+    <header id="hud" class="hud" hidden>
+      <div class="hud-inner">
+        <div class="hud-id">
+          <div class="avatar" id="hud-avatar">🛡️</div>
+          <div>
+            <b id="hud-name">Герой</b>
+            <span id="hud-class">Воин-нытик · ур. 1</span>
+          </div>
+        </div>
+        <div class="hud-vitals">
+          <div class="vital hp">
+            <span>HP</span>
+            <div class="vbar"><i id="bar-hp" style="width:100%"></i></div>
+            <span class="vnum" id="num-hp">80 / 80</span>
+          </div>
+          <div class="vital mp">
+            <span>MP</span>
+            <div class="vbar"><i id="bar-mp" style="width:100%"></i></div>
+            <span class="vnum" id="num-mp">22 / 22</span>
+          </div>
+          <div class="vital xp">
+            <span>XP</span>
+            <div class="vbar"><i id="bar-xp" style="width:0%"></i></div>
+            <span class="vnum" id="num-xp">0 / 20</span>
+          </div>
+        </div>
+        <div class="hud-tools">
+          <button class="icon-btn" id="btn-goose" title="Гусь" aria-label="Позвать гуся" hidden>🦢<span class="badge" id="goose-badge">0</span></button>
+          <button class="icon-btn" id="btn-bag" title="Сумка" aria-label="Открыть сумку">🎒<span class="badge" id="bag-count">0</span></button>
+          <button class="icon-btn" id="btn-sound" title="Звук" aria-label="Переключить звук">🔊</button>
+          <button class="icon-btn" id="btn-help" title="Как играть" aria-label="Как играть">❓</button>
+          <button class="icon-btn" id="btn-menu" title="Меню" aria-label="Меню">☰</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="screens">
+      <!-- ================= ТИТУЛ ================= -->
+      <section id="screen-title" class="screen active" aria-label="Главный экран">
+        <div class="title-wrap">
+          <div class="crest" aria-hidden="true">
+            <div class="crest-ring"></div>
+            <div class="crest-emoji">
+              <svg viewBox="0 0 220 160"><use href="#baguette"/></svg>
+            </div>
+          </div>
+          <p class="kicker">приключение на 30–45 минут</p>
+          <h1 class="game-title">БАТОН<span>СУДЬБЫ</span></h1>
+          <p class="subtitle">Тёмный Менеджер украл священный батон. Королевство на грани бесконечного понедельника.
+            Ты&nbsp;— единственный, кому нечем заняться.</p>
+          <div class="title-actions">
+            <button class="btn btn-primary btn-xl" id="btn-new">⚔️ Новая игра</button>
+            <button class="btn btn-ghost btn-xl" id="btn-continue" hidden>▶ Продолжить</button>
+          </div>
+          <ul class="feature-row">
+            <li>⏱ 30–45 минут</li>
+            <li>🥟 шаурма внутри</li>
+            <li>💾 автосохранение</li>
+            <li>🦢 один гусь</li>
+          </ul>
+          <p class="title-foot">Сделано с любовью, шаурмой и лёгким кринжем</p>
+        </div>
+      </section>
+
+      <!-- ================= ВЫБОР КЛАССА ================= -->
+      <section id="screen-classes" class="screen" aria-label="Выбор класса">
+        <div class="panel class-panel">
+          <div class="class-head">
+            <div>
+              <p class="kicker">выбери свою боль</p>
+              <h2>Кем ты будешь страдать?</h2>
+            </div>
+            <div class="name-field">
+              <label for="hero-name">Имя героя</label>
+              <input id="hero-name" maxlength="16" value="Герой" autocomplete="off" spellcheck="false">
+            </div>
+          </div>
+          <div class="class-grid" id="class-grid"></div>
+          <div class="row-end">
+            <button class="btn btn-ghost" id="btn-back-title">← Назад</button>
+            <button class="btn btn-primary" id="btn-start" disabled>Начать приключение →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ПУТЬ ================= -->
+      <section id="screen-journey" class="screen" aria-label="Карта путешествия">
+        <div class="panel journey-wrap">
+          <div class="journey-head">
+            <div>
+              <p class="kicker">твой путь</p>
+              <h2>Дорога к батону</h2>
+              <p class="muted" style="font-size:13.5px;margin-top:6px">Один герой. Один батон. Ноль плана.</p>
+            </div>
+            <div class="journey-tools">
+              <button class="btn btn-ghost" id="btn-shop" type="button">🥟 Шаурмичная</button>
+              <div class="progress-pill">Пройдено <b id="progress-num">0 / 19</b></div>
+            </div>
+          </div>
+          <div id="journey-list" class="journey-list"></div>
+        </div>
+      </section>
+
+      <!-- ================= ИСТОРИЯ ================= -->
+      <section id="screen-story" class="screen" aria-label="История">
+        <div class="story-wrap">
+          <div class="story-card">
+            <div class="story-portrait" id="story-portrait">👵</div>
+            <div class="story-body">
+              <p class="scene-label" id="story-place">Деревня Начальная</p>
+              <h2 class="story-who" id="story-who">Бабушка Зинаида</h2>
+              <div class="story-text" id="story-text"></div>
+              <div class="story-options" id="story-options"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= БОЙ ================= -->
+      <section id="screen-battle" class="screen" aria-label="Бой">
+        <div class="battle">
+          <div class="arena" id="arena" data-biome="village">
+            <div class="arena-scenery" id="arena-scenery"></div>
+            <div class="foe" id="foe">
+              <div class="foe-ring"></div>
+              <div class="foe-sprite" id="foe-sprite">🦢</div>
+            </div>
+            <div class="damage-layer" id="damage-layer"></div>
+            <div class="foe-plate">
+              <div class="foe-top">
+                <h2 id="foe-name">Гусь-Хулиган</h2>
+                <span class="foe-tag" id="foe-tag">ур. 1</span>
+              </div>
+              <div class="vital enemy hp" style="grid-template-columns:26px 1fr auto">
+                <span style="font-size:9.5px">HP</span>
+                <div class="vbar"><i id="foe-hp" style="width:100%"></i></div>
+                <span class="vnum" id="foe-hp-num">38 / 38</span>
+              </div>
+              <div class="statuses" id="foe-status"></div>
+            </div>
+          </div>
+
+          <div class="battle-side">
+            <div class="turn-badge"><span>Ход <b id="turn-num">1</b></span><span id="battle-place">Деревня Начальная</span></div>
+            <div class="log" id="log" aria-live="polite"></div>
+            <div class="hero-status" id="player-status"></div>
+            <div class="class-row" id="class-row" hidden>
+              <div class="cr-meter">
+                <div class="cr-head"><span id="cr-label">Обида</span><span id="cr-num">0 / 100</span></div>
+                <div class="cr-track"><i id="cr-fill"></i></div>
+              </div>
+              <button class="cr-btn" id="cr-action" type="button">Накипело</button>
+            </div>
+            <div class="timing" id="timing" hidden>
+              <div class="timing-title"><span id="timing-label">Атака</span><span>клик по шкале / пробел</span></div>
+              <div class="timing-track" id="timing-track">
+                <div class="timing-zone graze"></div>
+                <div class="timing-zone good"></div>
+                <div class="timing-zone gold"></div>
+                <div class="timing-cursor" id="timing-cursor"></div>
+              </div>
+              <div class="timing-hint">Попади в золотую зону — будет КРИТ ×1.5</div>
+            </div>
+            <div class="actions" id="actions"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ФИНАЛ ================= -->
+      <section id="screen-end" class="screen" aria-label="Финал">
+        <div class="end-panel">
+          <div class="end-emoji" id="end-emoji">
+            <svg viewBox="0 0 220 160"><use href="#baguette"/></svg>
+          </div>
+          <p class="kicker" id="end-kicker">финал</p>
+          <h2 id="end-title">Батон возвращён</h2>
+          <div class="end-text" id="end-text"></div>
+          <div class="end-stats" id="end-stats"></div>
+          <div class="end-rank" id="end-rank"></div>
+          <div class="end-actions">
+            <button class="btn btn-primary" id="btn-again">Играть снова</button>
+            <button class="btn btn-ghost" id="btn-recap">📱 Видео-итог</button>
+            <button class="btn btn-ghost" id="btn-share">📋 Скопировать подвиг</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- ================= СУМКА ================= -->
+  <div class="modal" id="modal-bag" hidden>
+    <div class="modal-backdrop" data-close="bag"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bag-title">
+      <div class="modal-head">
+        <h3 id="bag-title">🎒 Сумка</h3>
+        <button class="icon-btn" data-close="bag" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="bag-list" id="bag-list"></div>
+      <p class="modal-foot">В бою предмет тратит ход. Вне боя — просто лечит.</p>
+    </div>
+  </div>
+
+  <!-- ================= УРОВЕНЬ ================= -->
+  <div class="modal" id="modal-level" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="level-title">
+      <p class="kicker">новый уровень</p>
+      <h3 id="level-title" style="font-family:var(--font-display);font-size:30px;margin-top:4px">Уровень 2!</h3>
+      <p class="muted" style="font-size:12.5px;margin-top:4px">Бабушка гордится. Гусь — нет, но он вообще сложный.</p>
+      <div class="level-auto" id="level-auto"></div>
+      <p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2);margin-top:18px">выбери талант</p>
+      <div class="upgrade-grid" id="upgrade-grid"></div>
+    </div>
+  </div>
+
+  <!-- ================= ПОБЕДА ================= -->
+  <div class="modal" id="modal-victory" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="victory-title">
+      <div class="reward-hero">
+        <span class="win-emoji" id="victory-emoji">🏆</span>
+        <h3 id="victory-title">Победа!</h3>
+        <p id="victory-sub">Врагу хватило одного батона по голове</p>
+      </div>
+      <div class="reward-lines" id="reward-lines"></div>
+      <button class="btn btn-primary" id="btn-claim" style="width:100%">Забрать награду →</button>
+    </div>
+  </div>
+
+  <!-- ================= ВИДЕО ================= -->
+  <div class="modal video-modal" id="modal-video" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="video-shell" role="dialog" aria-modal="true" aria-labelledby="video-title">
+      <div class="phone" id="video-phone">
+        <div class="phone-notch"></div>
+        <div class="phone-top"><span class="live-dot"></span><span>@batonsavior</span><span id="phone-batt">3%</span></div>
+        <div class="video-frame" id="video-frame">
+          <div class="vf-badge" id="vf-badge">REC</div>
+          <div class="vf-emoji" id="vf-emoji">😱</div>
+          <div class="vf-title" id="vf-title">ОН УКРАЛ БАТОН. Я ВЕРНУЛ. ЧАСТЬ 1</div>
+          <div class="vf-caption" id="vf-caption"></div>
+          <div class="vf-likes" id="vf-likes">❤️ 0</div>
+          <div class="vf-progress"><i id="vf-progress"></i></div>
+          <div class="vf-comments" id="vf-comments"></div>
+        </div>
+        <div class="phone-bottom"><span id="pb-likes">♡ 0</span><span id="pb-comments">💬 0</span><span>↗</span></div>
+      </div>
+      <div class="video-panel">
+        <p class="kicker">сторис</p>
+        <h3 id="video-title">Контент сам себя не снимет</h3>
+        <p class="muted" id="video-sub">3% заряда. Один шанс. Гусь в чате.</p>
+        <div id="video-studio">
+          <div class="vgroup"><span class="vlabel">Превью</span><div class="vchips" id="v-thumbs"></div></div>
+          <div class="vgroup"><span class="vlabel">Заголовок</span><div class="vchips titles" id="v-titles"></div></div>
+          <div class="vgroup"><span class="vlabel">Музыка</span><div class="vchips" id="v-music"></div></div>
+          <button class="btn btn-primary" id="btn-record">🎬 Записать</button>
+        </div>
+        <div id="video-recstatus" hidden>
+          <p class="kicker" style="color:#ff8fa4"><span class="live-dot"></span> запись</p>
+          <h3>Не моргай. Гусь смотрит.</h3>
+          <p class="muted">Телефон держится на скотче и честном слове. Осталось 2%.</p>
+        </div>
+        <div id="video-result" hidden>
+          <div class="vresult-nums">
+            <div><b id="vr-views">0</b><span id="vr-l1">просмотров</span></div>
+            <div><b id="vr-likes">0</b><span>лайков</span></div>
+            <div><b id="vr-clout">0</b><span id="vr-l3">хайпа</span></div>
+          </div>
+          <p class="vresult-text" id="vr-text"></p>
+          <button class="btn btn-primary" id="btn-video-done">Дальше →</button>
+        </div>
+        <button class="btn-link" id="btn-video-skip" hidden>Пропустить запись</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ГУСЬ ================= -->
+  <div class="modal" id="modal-goose" hidden>
+    <div class="modal-backdrop" data-close="goose"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="goose-title">
+      <div class="modal-head">
+        <h3 id="goose-title">🦢 Гусь</h3>
+        <button class="icon-btn" data-close="goose" aria-label="Закрыть">✕</button>
+      </div>
+      <p class="muted" id="goose-sub" style="font-size:13px;margin-bottom:12px">Уважение: 0 / 5</p>
+      <div class="choice-list">
+        <button class="choice-opt" type="button" data-goose="attack">
+          <span class="co-emoji">🦢</span>
+          <span class="co-body"><b>Фас!</b><small>Гусь бьёт врага. +1 уважение.</small></span>
+        </button>
+        <button class="choice-opt" type="button" data-goose="guard">
+          <span class="co-emoji">🛡️</span>
+          <span class="co-body"><b>Прикрой!</b><small>Лечит и закрывает тебя на ход. +1 уважение.</small></span>
+        </button>
+        <button class="choice-opt" type="button" data-goose="wild">
+          <span class="co-emoji">🎲</span>
+          <span class="co-body"><b>Сам разберись</b><small>Гусь решает сам. Может быть гениально. Может быть гусь.</small></span>
+        </button>
+      </div>
+      <p class="modal-foot">Раз в 3 хода. 25% шанс, что Гусь скажет «ну это другое».</p>
+    </div>
+  </div>
+
+  <!-- ================= ШАУРМИЧНАЯ ================= -->
+  <div class="modal" id="modal-shop" hidden>
+    <div class="modal-backdrop" data-close="shop"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="shop-title">
+      <div class="modal-head">
+        <h3 id="shop-title">🥟 Шаурмичная</h3>
+        <button class="icon-btn" data-close="shop" aria-label="Закрыть">✕</button>
+      </div>
+      <p class="muted" id="shop-balance" style="font-size:13px;margin-bottom:12px">Лайки: 0</p>
+      <div class="shop-list" id="shop-list"></div>
+      <p class="modal-foot">Лайки капают за победы и мемы. Бабушка принимает без сдачи.</p>
+    </div>
+  </div>
+
+  <!-- ================= ВЫБОР ФИНАЛА ================= -->
+  <div class="modal" id="modal-ending" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="ending-title">
+      <p class="kicker">финал</p>
+      <h3 id="ending-title" style="font-family:var(--font-display);font-size:30px;margin:5px 0 8px">Что делать с батоном?</h3>
+      <p class="muted" style="font-size:13px;margin-bottom:14px">Ты держишь его в руках. Он тёплый. Он твой. Ну, почти.</p>
+      <div class="choice-list">
+        <button class="choice-opt" type="button" data-ending="hero">
+          <span class="co-emoji">🥖</span>
+          <span class="co-body"><b>Вернуть бабушке</b><small>Скучно, зато правильно. И пахнет хлебом.</small></span>
+        </button>
+        <button class="choice-opt" type="button" data-ending="influencer">
+          <span class="co-emoji">📱</span>
+          <span class="co-body"><b>Оставить себе и стримить</b><small>Батон станет контентом. Ты — его продюсером.</small></span>
+        </button>
+        <button class="choice-opt" type="button" data-ending="goose" id="ending-goose">
+          <span class="co-emoji">🦢</span>
+          <span class="co-body"><b>Отдать Гусю</b><small>Он обещает править мудро. Гусь не умеет читать.</small></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ПОРАЖЕНИЕ ================= -->
+  <div class="modal" id="modal-defeat" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="defeat-title" style="text-align:center">
+      <div style="font-size:54px;line-height:1;margin:2px 0 8px;filter:drop-shadow(0 10px 26px rgba(255,85,112,.45))">💀</div>
+      <p class="kicker" style="color:#ff8fa4">немного не получилось</p>
+      <h3 id="defeat-title" style="font-family:var(--font-display);font-size:30px;margin-top:4px">Ты умер</h3>
+      <p class="muted" style="font-size:13.5px;max-width:380px;margin:10px auto 0">
+        Бабушка уже достала шаурму и смотрит на тебя с укоризной. Она воскресит тебя бесплатно —
+        но запишет это в тетрадочку.
+      </p>
+      <button class="btn btn-primary" id="btn-revive" style="width:100%;margin-top:20px">🥟 Воскреснуть и попробовать снова</button>
+      <p class="modal-foot">Смерть не отменяет прогресс. Только достоинство.</p>
+    </div>
+  </div>
+
+  <!-- ================= МЕНЮ ================= -->
+  <div class="modal" id="modal-menu" hidden>
+    <div class="modal-backdrop" data-close="menu"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="menu-title">
+      <div class="modal-head">
+        <h3 id="menu-title">☰ Меню</h3>
+        <button class="icon-btn" data-close="menu" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="menu-list">
+        <button class="btn" data-close="menu">▶ Продолжить</button>
+        <button class="btn" id="menu-help">❓ Как играть</button>
+        <button class="btn" id="menu-perf">⚡ Режим производительности</button>
+        <button class="btn" id="menu-restart">🔄 Начать заново</button>
+        <button class="btn danger" id="menu-reset">🗑 Сбросить весь прогресс</button>
+      </div>
+      <p class="modal-foot">Прогресс сохраняется автоматически.<br>Батон — нет, батон надо спасать.</p>
+    </div>
+  </div>
+
+  <!-- ================= ПОМОЩЬ ================= -->
+  <div class="modal" id="modal-help" hidden>
+    <div class="modal-backdrop" data-close="help"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <div class="modal-head">
+        <h3 id="help-title">❓ Как играть</h3>
+        <button class="icon-btn" data-close="help" aria-label="Закрыть">✕</button>
+      </div>
+      <ul class="help-list">
+        <li><span class="he">⚔️</span><span><b>Атака.</b> После нажатия побежит полоска. Кликни (или жми пробел), когда курсор в золотой зоне — получишь крит ×1.5.</span></li>
+        <li><span class="he">✨</span><span><b>Скиллы</b> тратят ману и бьют больнее. У каждого класса свои. Мана сама не восстановится — блок и предметы в помощь.</span></li>
+        <li><span class="he">🛡️</span><span><b>Блок</b> режет входящий урон на 60% и возвращает 6 маны. Скучно, зато живёшь.</span></li>
+        <li><span class="he">😹</span><span><b>Мем</b> — раз в 3 хода. Эффект случайный: стан, бафф, лечение... или кринж. Как в интернете.</span></li>
+        <li><span class="he">🔥</span><span><b>Классовая фишка.</b> У каждого класса своя шкала под журналом: Обида, Вкладки, Заказ или Подписчики. Копится в бою и открывает особую кнопку.</span></li>
+        <li><span class="he">🥟</span><span><b>Шаурма</b> лечит. Предмет в бою тратит ход. Не бойся тратить — бабушка положила ещё.</span></li>
+        <li><span class="he">💾</span><span>Прогресс сохраняется сам. Умереть не страшно: бабушка всегда рядом с шаурмой.</span></li>
+      </ul>
+      <p class="modal-foot">Горячие клавиши: 1–7 — действия (7 — классовая), G — Гусь, M — звук, I — сумка</p>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
+
