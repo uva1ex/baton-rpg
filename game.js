@@ -14,7 +14,19 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  const chance = (p) => Math.random() < p;
+
+  function pickUnique(arr, key) {
+    if (!arr || !arr.length) return '';
+    if (!combat) return pick(arr);
+    if (!combat.linesUsed) combat.linesUsed = {};
+    let used = combat.linesUsed[key] || [];
+    let pool = arr.filter((line) => !used.includes(line));
+    if (!pool.length) { used = []; pool = arr.slice(); }
+    const line = pick(pool);
+    used.push(line);
+    combat.linesUsed[key] = used;
+    return line;
+  }  const chance = (p) => Math.random() < p;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const esc = (s) =>
     String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -206,6 +218,30 @@
       'Враг: — Только не пой. Пожалуйста.'
     ]
   };
+
+  const CLASS_TAUNTS_EXTRA = {
+    warrior: [
+      'Враг: — Ты выглядишь так, будто тебе нужен отпуск.',
+      'Враг: — Отдохни. Я подожду. Нет, не подожду.',
+      'Враг: — Твоя усталость меня вдохновляет.'
+    ],
+    mage: [
+      'Враг: — Ты уже гуглил, как победить меня?',
+      'Враг: — У тебя вкладок больше, чем HP.',
+      'Враг: — Я тоже когда-то был загрузкой.'
+    ],
+    rogue: [
+      'Враг: — Ты опоздал. Как всегда.',
+      'Враг: — Курьер без батона — это человек с сумкой.',
+      'Враг: — Оценка заведения: две звезды.'
+    ],
+    bard: [
+      'Враг: — Твой контент видят только мама и Гусь.',
+      'Враг: — Я подписан на тебя. Из жалости.',
+      'Враг: — Алгоритм тебя не любит. Я тоже.'
+    ]
+  };
+  Object.entries(CLASS_TAUNTS_EXTRA).forEach(([cls, lines]) => CLASS_TAUNTS[cls].push(...lines));
 
   const BOSS_CLASS_LINES = {
     warrior: 'Менеджер: — Ты устал. Это видно по глазам. Отдохни. Навсегда.',
@@ -400,6 +436,157 @@
       loot: [{ id: 'cookie', n: 2 }, { id: 'energy', n: 2 }]
     }
   };
+
+  const EXTRA_ENEMY_LINES = {
+    goose: {
+      taunts: [
+        'Гусь делает вид, что не слышит. Это его сильнейшая атака.',
+        'Гусь проверяет, не покормишь ли ты его. Нет? Ну ладно.',
+        'Гусь уже победил. Он просто даёт тебе время это осознать.',
+        'Гусь шепчет: «батон». Ты не знаешь, что это значит.'
+      ],
+      barks: ['Гусь довольно гогочет.', 'Гусь делает вид, что это было запланировано.']
+    },
+    cat: {
+      taunts: [
+        'Кот открывает Excel. Это плохой знак.',
+        'Кот считает твои шансы. Получается отрицательно.',
+        'Кот записывает тебя в «прочие расходы».',
+        'Кот говорит: «это не налог, это инвестиция».'
+      ],
+      barks: ['Кот делает пометку: «клиент проблемный».', 'Кот сворачивает смету. Смета не сворачивается.']
+    },
+    slime: {
+      taunts: [
+        'Слизь пускает пузырь. В пузыре — твои планы на завтра.',
+        'Слизь обволакивает. Как дедлайн.',
+        'Слизь напоминает, что ты не выспался. Спасибо.',
+        'Слизь предлагает полежать. Ты почти согласен.'
+      ],
+      barks: ['Слизь довольно булькает.', 'Слизь говорит: «ну вот, опять».']
+    },
+    mimic: {
+      taunts: [
+        'Батон делает вид, что он просто хлеб. Плохо получается.',
+        'Мимик пахнет свежим. Это подозрительно.',
+        'Мимик говорит: «съешь меня». Классика.',
+        'Батон хрустит не тобой, а своими нервами.'
+      ],
+      barks: ['Батон трескается. Это не батон.', 'Мимик роняет крошки. Это его слёзы.']
+    },
+    timlid: {
+      taunts: [
+        'Тимлид пишет «коллеги, добрый день» в 23:40.',
+        'Тимлид создаёт задачу. Название: «разобраться с тобой».',
+        'Тимлид говорит: «давай без статусов». И ставит статус.',
+        'Тимлид смотрит в будущее. Там ещё больше созвонов.'
+      ],
+      barks: ['Тимлид переносит встречу. На «никогда».', 'Тимлид говорит: «мы почти закончили». Это ложь.']
+    },
+    boss: {
+      taunts: [
+        'Менеджер говорит: «я на минуту». Ты уже слышал это.',
+        'Менеджер открывает презентацию. Слайд 1: «ты уволен».',
+        'Менеджер спрашивает: «где отчёт?» Ты не знал про отчёт.',
+        'Менеджер ставит встречу на «после дедлайна».'
+      ],
+      barks: ['Менеджер снимает очки. Плохой знак.', 'Менеджер говорит: «давай честно». Это точно ложь.']
+    },
+    secretary: {
+      taunts: [
+        'Секретарь: — У вас есть запись? Нет? Странно.',
+        'Секретарь: — Окно закрыто. В буквальном смысле.',
+        'Секретарь: — Форма 12-Б недействительна. Форма 12-В тоже.',
+        'Секретарь: — Я вас слушаю. Но не очень.'
+      ],
+      barks: ['Секретарь ставит ещё одну печать.', 'Секретарь: — Следующий!']
+    },
+    infogypsy: {
+      taunts: [
+        'Инфоцыган: — У меня для тебя специальное предложение.',
+        'Инфоцыган: — Ты не покупаешь курс. Курс покупает тебя.',
+        'Инфоцыган: — Первый шаг бесплатно. Второй — почка.',
+        'Инфоцыган: — Твой потенциал! Я вижу его! Ну, почти.'
+      ],
+      barks: ['Инфоцыган улыбается. Это дорого.', 'Инфоцыган: — Только сегодня!']
+    },
+    double: {
+      taunts: [
+        'Двойник: — Я лучше тебя. Я хотя бы свежий.',
+        'Двойник: — Ты повторяешься. Я тоже.',
+        'Двойник: — У меня твоя причёска. Извини.',
+        'Двойник: — Мы могли бы быть друзьями. Но батон один.'
+      ],
+      barks: ['Двойник повторяет твоё дыхание.', 'Двойник: — Мы почти одинаковые. Это бесит.']
+    },
+    algorithm: {
+      taunts: [
+        'Алгоритм: — Это видео наберёт двенадцать просмотров. Один из них — ты.',
+        'Алгоритм: — Я не злой. Я просто рекомендательный.',
+        'Алгоритм: — Твой контент не проходит модерацию совести.',
+        'Алгоритм: — Покажи что-нибудь вирусное. Или хотя бы смешное.'
+      ],
+      barks: ['Алгоритм обновляет ленту.', 'Алгоритм: — Тебе понравится. Это приказ.']
+    }
+  };
+
+  Object.entries(EXTRA_ENEMY_LINES).forEach(([id, extra]) => {
+    if (!ENEMIES[id]) return;
+    ENEMIES[id].taunts = (ENEMIES[id].taunts || []).concat(extra.taunts || []);
+    ENEMIES[id].barks = extra.barks || [];
+  });
+
+  const EXTRA_BARKS = {
+    goose: ['Гусь требует ещё одну шаурму. Немедленно.'],
+    cat: ['Кот закрывает ноутбук. Впервые за день.'],
+    slime: ['Слизь делает вид, что она не при делах.'],
+    mimic: ['Мимик пахнет ещё свежее. Это тревожно.'],
+    timlid: ['Тимлид говорит: «я быстро». Это никогда не быстро.'],
+    boss: ['Менеджер говорит: «давай по итогам». Итоги тебе не понравятся.'],
+    secretary: ['Секретарь: — Приём окончен. Но я вас слушаю.'],
+    infogypsy: ['Инфоцыган: — Это последний слот. Честно.'],
+    double: ['Двойник: — Ты даже дышишь как я. Кринж.'],
+    algorithm: ['Алгоритм: — Ещё один ролик. Ну пожалуйста.']
+  };
+  Object.entries(EXTRA_BARKS).forEach(([id, lines]) => {
+    if (ENEMIES[id]) ENEMIES[id].barks = (ENEMIES[id].barks || []).concat(lines);
+  });
+
+  const MOVE_TEXT_EXTRAS = {
+    goose: { 'Щипок': ['Гусь щиплет. Профессионально. Как будто у него диплом.'] },
+    cat: { 'Налог на воздух': ['Кот включает налог на воздух. Дышишь? Плати.'] },
+    slime: { 'Приступ прокрастинации': ['Слизь шепчет: «сделаешь завтра». Ты веришь.'] },
+    mimic: { 'Хруст': ['Мимик хрустит с хрустящей корочкой. Твоей.'] },
+    timlid: { 'Срочный созвон': ['Тимлид ставит созвон на 9:00. На завтра. И на послезавтра.'] },
+    boss: { 'Правки от клиента': ['Клиент просит «как в прошлый раз, но по-другому». Менеджер кивает.'] },
+    secretary: { 'Печать в лоб': ['Секретарь ставит печать. Теперь ты официально проблемный.'] },
+    infogypsy: { 'Марафон желаний': ['Марафон желаний. Твоё желание — чтобы он закончился.'] },
+    double: { 'Хруст': ['Двойник хрустит. Ты слышишь хруст изнутри.'] },
+    algorithm: { 'Вирусный штраф': ['Алгоритм показывает тебе аналитику. Ты в минусе.'] }
+  };
+  Object.entries(MOVE_TEXT_EXTRAS).forEach(([id, moves]) => {
+    if (!ENEMIES[id]) return;
+    Object.entries(moves).forEach(([name, texts]) => {
+      const move = (ENEMIES[id].moves || []).find((m) => m.name === name);
+      if (move) move.texts = [move.text, ...texts];
+    });
+  });
+
+  const MOVE_TEXT_EXTRAS_2 = {
+    boss: {
+      'Правки в 23:59': ['Правки приходят в 23:59. Ты уже спишь. Менеджер — нет.'],
+      'Вторая смена': ['Менеджер открывает вторую смену. Твою. Опять.'],
+      'Синергия': ['Менеджер применяет синергию. Больно и непонятно.'],
+      'Дедлайн': ['Дедлайн. Тот же дедлайн, но теперь с характером.']
+    }
+  };
+  Object.entries(MOVE_TEXT_EXTRAS_2).forEach(([id, moves]) => {
+    if (!ENEMIES[id]) return;
+    Object.entries(moves).forEach(([name, texts]) => {
+      const move = (ENEMIES[id].moves2 || []).find((m) => m.name === name);
+      if (move) move.texts = [move.text, ...texts];
+    });
+  });
 
   /* ------------------------------------------------------
      Данные: сюжет
@@ -1700,6 +1887,7 @@
       followers: Math.min(100, (S.clout || 0) * 8),
       lastClassTaunt: 0,
       reach: 0, lastSkillName: '', gooseCd: 0,
+      linesUsed: {}, playerCrit: false,
       mods
     };
     story = null;
@@ -1722,8 +1910,8 @@
     actionSig = '';
     showScreen('battle');
     addLog(`<b>${esc(base.name)}</b>. ${base.appear}`, 'sys');
-    addLog(esc(pick(base.taunts)), 'foe');
-    if (CLASS_TAUNTS[S.cls]) addLog(esc(pick(CLASS_TAUNTS[S.cls])), 'foe');
+    addLog(esc(pickUnique(base.taunts, 'taunt')), 'foe');
+    if (CLASS_TAUNTS[S.cls]) addLog(esc(pickUnique(CLASS_TAUNTS[S.cls], 'class')), 'foe');
     if (base.boss && BOSS_CLASS_LINES[S.cls]) addLog(esc(BOSS_CLASS_LINES[S.cls]), 'foe');
     if (mods.foeStun) addLog('💫 Враг растерян и пропустит первый ход.', 'good');
     if (mods.foeHp) addLog(`💥 Ты уже успел нанести <span class="num">${-mods.foeHp}</span> урона одним разговором.`, 'good');
@@ -2060,6 +2248,7 @@
     combat.hp -= dmg;
     S.dmg += dmg;
     if (crit) S.crits += 1;
+    combat.playerCrit = !!crit;
     popDamage(dmg, crit ? 'crit' : '');
     const sprite = $('#foe-sprite');
     sprite.classList.remove('hit');
@@ -2183,6 +2372,7 @@
       combat.reach = Math.max(0, (combat.reach || 0) - 4);
       addLog('📉 Мем сбивает охваты: −4.', 'good');
     }
+    if (combat.foe.barks && chance(0.3)) addLog(esc(pickUnique(combat.foe.barks, 'bark')), 'foe');
     sfx('meme');
     renderCombat();
     await sleep(620);
@@ -2228,15 +2418,25 @@
       await sleep(380);
       return;
     }
+    let barked = false;
+    if (combat.playerCrit && foe.barks && chance(0.6)) {
+      addLog(esc(pickUnique(foe.barks, 'bark')), 'foe');
+      barked = true;
+    }
+    combat.playerCrit = false;
+    if (!barked && foe.barks && combat.hp < combat.maxHp * 0.3 && chance(0.35)) {
+      addLog(esc(pickUnique(foe.barks, 'bark')), 'foe');
+    }
     if (!foe.boss && CLASS_TAUNTS[S.cls] && combat.turn - (combat.lastClassTaunt || 0) >= 3 && chance(0.35)) {
-      addLog(esc(pick(CLASS_TAUNTS[S.cls])), 'foe');
+      addLog(esc(pickUnique(CLASS_TAUNTS[S.cls], 'class')), 'foe');
       combat.lastClassTaunt = combat.turn;
       await sleep(280);
     }
     const move = chooseMove();
     addLog(`<b>${esc(foe.name)}</b> использует «${move.name}».`, 'foe');
     await sleep(340);
-    if (move.text) addLog(move.text, 'foe');
+    const moveText = move.texts ? pickUnique(move.texts, 'move:' + move.name) : move.text;
+    if (moveText) addLog(moveText, 'foe');
     if (foe.name === 'Батон-Двойник' && move.name === 'Повторить за тобой' && combat.lastSkillName) {
       addLog(`Двойник повторяет «${combat.lastSkillName}». Копия хуже оригинала.`, 'foe');
     }
@@ -2354,7 +2554,7 @@
     renderActions();
     sfx('win');
     save();
-    setTimeout(showVictory, 800);
+    setTimeout(showVictory, 1100);
   }
 
   function showVictory() {
@@ -2376,9 +2576,18 @@
     });
     if (!loot.length) rows.push('<div class="reward-line"><span>Трофеи</span><b>совесть чиста</b></div>');
     $('#reward-lines').innerHTML = rows.join('');
+    const vlog = $('#victory-log');
+    if (vlog) {
+      vlog.innerHTML = $('#log').innerHTML;
+      vlog.scrollTop = vlog.scrollHeight;
+    }
     $('#btn-claim').disabled = false;
     $('#btn-claim').textContent = foe.boss ? 'Спасти батон →' : 'Забрать награду →';
     $('#modal-victory').hidden = false;
+    requestAnimationFrame(() => {
+      const el = $('#victory-log');
+      if (el) el.scrollTop = el.scrollHeight;
+    });
   }
 
   async function claimRewards() {
